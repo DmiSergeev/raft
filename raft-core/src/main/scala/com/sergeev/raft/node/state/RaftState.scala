@@ -27,7 +27,7 @@ abstract class RaftState[V <: RaftVolatileState[V], T <: RaftState[V, T]] {
 
   def currentTerm: RaftTerm = persistent.currentTerm
 
-  def appliedCommands[U <: RaftVolatileState[U], S <: RaftState[U, S]](oldState: RaftState[U, S]): List[RaftCommand] =
+  def appliedCommands(oldState: RaftState[_ <: RaftVolatileState[_], _]): List[RaftCommand] =
     persistent.log.slice(oldState.volatile.commitIndex, this.volatile.commitIndex).map(entry ⇒ entry.command).toList
 
   def create(persistent: RaftPersistentState = persistent, volatile: V = volatile): T

@@ -1,11 +1,11 @@
 package com.sergeev.raft.node.role
 
-import com.sergeev.raft.node.message.{ AppendEntriesResponse, RaftMessage, RequestVoteResponse, RetryProcessingMessage }
-import com.sergeev.raft.node.state.{ RaftState, RaftVolatileState }
-import com.sergeev.raft.node.{ ProcessingResult, RaftContext, RaftTerm, StateHolder }
+import com.sergeev.raft.node.message.{AppendEntriesResponse, RaftMessage, RequestVoteResponse, RetryProcessingMessage}
+import com.sergeev.raft.node.state.{RaftPersistentState, RaftState, RaftVolatileState}
+import com.sergeev.raft.node.{ProcessingResult, RaftContext, RaftTerm, StateHolder}
 
 abstract class RaftRole[S <: RaftState[_ <: RaftVolatileState[_], S]] {
-  def initializeState(): S = ???
+  def initializeState(raftPersistentState: RaftPersistentState): S = ???
 
   def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[S]
 

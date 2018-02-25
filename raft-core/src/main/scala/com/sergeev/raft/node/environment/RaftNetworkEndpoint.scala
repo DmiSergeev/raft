@@ -12,5 +12,5 @@ trait RaftNetworkEndpoint {
 object RaftNetworkEndpoint extends RaftNetworkEndpoint {
   def sendMessage(target: NodeId, message: RaftMessage): Unit = {}
 
-  def sendClientAck(command: RaftCommand): Unit = ???
+  def sendClientAck(command: RaftCommand): Unit = {}
 }

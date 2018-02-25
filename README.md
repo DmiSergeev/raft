@@ -1,6 +1,6 @@
 # Raft consensus protocol Scala implementation
-This is yet another Raft (https://raft.github.io/raft.pdf) implementation on Scala
-This work is made in order to get familiar with Scala language and Raft protocol. It is intended to be use for educational purposes primarily.
+This is yet another Raft (https://raft.github.io/raft.pdf) implementation on Scala.
+This work is made in order to get familiar with Scala language and Raft protocol. It is intended to be used primarily for educational purposes.
 
 ## Licence
 

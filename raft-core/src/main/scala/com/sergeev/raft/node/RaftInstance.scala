@@ -1,18 +1,19 @@
 package com.sergeev.raft.node
 
-import com.sergeev.raft.node.environment.{ RaftNetworkEndpoint, RaftScheduler }
+import com.sergeev.raft.node.environment.{RaftNetworkEndpoint, RaftScheduler, RaftStorage}
 import com.sergeev.raft.node.message._
-import com.sergeev.raft.node.role.{ RaftFollower, RaftRole }
-import com.sergeev.raft.node.state.{ RaftState, RaftVolatileState }
+import com.sergeev.raft.node.role.{RaftFollower, RaftRole}
+import com.sergeev.raft.node.state.{RaftState, RaftVolatileState}
 
-trait RaftRouter {
+trait RaftInstance {
   def processClientCommand(command: RaftCommand)
 
   def processNodeMessage(sender: NodeId, message: RaftMessage)
 }
 
-class RaftRouterImpl(context: RaftContext, network: RaftNetworkEndpoint, scheduler: RaftScheduler) extends RaftRouter {
-  private var stateHolder: StateHolder[_ <: RaftState[_ <: RaftVolatileState[_], _]] = StateHolder(RaftFollower, RaftFollower.initializeState())
+class RaftRouter(context: RaftContext, network: RaftNetworkEndpoint, scheduler: RaftScheduler, storage: RaftStorage) extends RaftInstance {
+  private var stateHolder: StateHolder[_ <: RaftState[_ <: RaftVolatileState[_], _]] =
+    StateHolder(RaftFollower, RaftFollower.initializeState(storage.restore()))
 
   override def processClientCommand(command: RaftCommand): Unit = processMessage(None, ClientCommand(command))
 
@@ -27,7 +28,14 @@ class RaftRouterImpl(context: RaftContext, network: RaftNetworkEndpoint, schedul
     val nextStateBeforeConvert = processingResult._2
     val outMessagesInfo = processingResult._3
 
+    val oldState = stateHolder.state
     stateHolder = nextRole.convertState(nextStateBeforeConvert)
+
+    val appliedCommands = stateHolder.state.appliedCommands(oldState)
+    storage.save(stateHolder.state.persistent)
+
+    for (command <- appliedCommands)
+      network.sendClientAck(command)
 
     for ((target, outMessage) ← outMessagesInfo)
       outMessage match {

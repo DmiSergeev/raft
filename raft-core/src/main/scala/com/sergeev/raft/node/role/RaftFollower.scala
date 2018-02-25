@@ -6,7 +6,8 @@ import com.sergeev.raft.node.state._
 import com.sergeev.raft.node.{ ProcessingResult, RaftContext, StateHolder }
 
 object RaftFollower extends RaftRole[RaftFollowerState] {
-  override def initializeState(): RaftFollowerState = RaftFollowerState(RaftPersistentState(0, None, Vector()), RaftFollowerVolatileState(-1, new DateTime(0)))
+  override def initializeState(raftPersistentState: RaftPersistentState): RaftFollowerState =
+    RaftFollowerState(raftPersistentState, RaftFollowerVolatileState(-1, new DateTime(0)))
 
   override def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[RaftFollowerState] =
     StateHolder(this, RaftFollowerState(state.persistent, RaftFollowerVolatileState(state.volatile.commitIndex, new DateTime(0))))

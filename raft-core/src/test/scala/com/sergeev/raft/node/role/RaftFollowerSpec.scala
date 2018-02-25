@@ -2,11 +2,12 @@
 package com.sergeev.raft.node.role
 
 import org.joda.time.DateTime
-import org.scalatest.{ Matchers, WordSpec }
-import com.sergeev.raft.node.environment.{ RaftNetworkEndpoint, RaftScheduler }
-import com.sergeev.raft.node.{ NodeId, RaftContext, RaftRouterImpl }
-import com.sergeev.raft.node.message.{ AppendEntriesRequest, AppendEntriesResponse, ElectionTimeoutMessage, IdleTimeoutMessage }
-import com.sergeev.raft.node.state.{ RaftFollowerState, RaftFollowerVolatileState, RaftPersistentState }
+import org.scalatest.{Matchers, WordSpec}
+import com.sergeev.raft.node.environment.{RaftNetworkEndpoint, RaftScheduler, RaftStorage}
+import com.sergeev.raft.node.{NodeId, RaftContext, RaftRouter}
+import com.sergeev.raft.node.message.{AppendEntriesRequest, AppendEntriesResponse, ElectionTimeoutMessage, IdleTimeoutMessage}
+import com.sergeev.raft.node.state.{RaftFollowerState, RaftFollowerVolatileState, RaftPersistentState}
+import com.sergeev.raft.simulation.RaftFakeStorage
 
 class RaftFollowerSpec extends WordSpec with Matchers {
   "processIncoming" should {
@@ -41,12 +42,12 @@ class RaftFollowerSpec extends WordSpec with Matchers {
           override val heartbeatTimeout: Int = 0
           override val electionTimeout: Int = 0
         }
-        val router = new RaftRouterImpl(context, RaftNetworkEndpoint, RaftScheduler)
+        val instance = new RaftRouter(context, RaftNetworkEndpoint, RaftScheduler, new RaftFakeStorage)
 
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))
 
-        router.processNodeMessage(1, request) // shouldBe (RaftFollower, state, List((0, IdleTimeoutMessage(0)), (1, AppendEntriesResponse(1, success = false))))
+        instance.processNodeMessage(1, request) // shouldBe (RaftFollower, state, List((0, IdleTimeoutMessage(0)), (1, AppendEntriesResponse(1, success = false))))
       }
     }
   }
