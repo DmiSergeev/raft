@@ -21,7 +21,7 @@ abstract class RaftState[V <: RaftVolatileState[V], T <: RaftState[V, T]] {
     if (persistent.log.indices.contains(index)) persistent.log(index).term else -1
 
   def isStaleWrtLeader(prevLogIndex: RaftIndexer, prevLogTerm: RaftTerm): Boolean =
-    lastLogIndex < prevLogIndex || persistent.log(prevLogIndex).term < prevLogTerm
+    lastLogIndex < prevLogIndex || logTerm(lastLogIndex) < prevLogTerm
 
   def isVoteFor(candidate: NodeId): Boolean = persistent.votedFor.contains(candidate)
 

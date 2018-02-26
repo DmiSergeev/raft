@@ -8,7 +8,10 @@ object RaftCandidate extends RaftRole[RaftCandidateState] {
   override def shortName: String = "CND"
 
   override def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[RaftCandidateState] =
-    StateHolder(this, RaftCandidateState(state.persistent, RaftCandidateVolatileState(state.volatile.commitIndex, Set())))
+    state match {
+      case candidateState: RaftCandidateState => StateHolder(this, candidateState)
+      case _ => StateHolder(this, RaftCandidateState(state.persistent, RaftCandidateVolatileState(state.volatile.commitIndex, Set())))
+    }
 
   override def processIncoming(incoming: RaftMessage, state: RaftCandidateState)(context: RaftContext): ProcessingResult[RaftCandidateState] =
     incoming match {

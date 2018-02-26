@@ -4,9 +4,9 @@ import com.sergeev.raft.fake.discrete.RaftDiscreteSimulator
 import org.scalatest.{Matchers, WordSpec}
 
 class RaftDiscreteSpec extends WordSpec with Matchers {
-  "simulator" should {
-    "send proper acks" when {
-      "===" in {
+  "cluster" should {
+    "choose leader" when {
+      "no messages and no failures" in {
         val simulator = new RaftDiscreteSimulator()
         simulator.start()
         simulator.updateTime(10000)

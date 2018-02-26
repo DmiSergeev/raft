@@ -1,9 +1,9 @@
 package com.sergeev.raft.node.role
 
-import org.joda.time.DateTime
 import com.sergeev.raft.node.message._
 import com.sergeev.raft.node.state._
-import com.sergeev.raft.node.{ ProcessingResult, RaftContext, StateHolder }
+import com.sergeev.raft.node.{ProcessingResult, RaftContext, StateHolder}
+import org.joda.time.DateTime
 
 object RaftFollower extends RaftRole[RaftFollowerState] {
   override def shortName: String = "FLW"
@@ -12,7 +12,10 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
     RaftFollowerState(raftPersistentState, RaftFollowerVolatileState(-1, new DateTime(0)))
 
   override def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[RaftFollowerState] =
-    StateHolder(this, RaftFollowerState(state.persistent, RaftFollowerVolatileState(state.volatile.commitIndex, new DateTime(0))))
+    state match {
+      case followerState: RaftFollowerState => StateHolder(this, followerState)
+      case _ => StateHolder(this, RaftFollowerState(state.persistent, RaftFollowerVolatileState(state.volatile.commitIndex, new DateTime(0))))
+    }
 
   override def processIncoming(incoming: RaftMessage, state: RaftFollowerState)(context: RaftContext): ProcessingResult[RaftFollowerState] = {
     def responseWithTimeout(state: RaftFollowerState, response: RaftMessage): ProcessingResult[RaftFollowerState] =

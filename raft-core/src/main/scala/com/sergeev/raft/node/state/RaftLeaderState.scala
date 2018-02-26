@@ -15,7 +15,7 @@ case class RaftLeaderState(override val persistent: RaftPersistentState, overrid
 
   def initialize(others: List[NodeId]): RaftLeaderState = create(
     persistent,
-    volatile.copy(nextIndex = others.map(x ⇒ (x, lastLogIndex)).toMap, matchIndex = others.map(x ⇒ (x, 0)).toMap))
+    volatile.copy(nextIndex = others.map(x ⇒ (x, lastLogIndex + 1)).toMap, matchIndex = others.map(x ⇒ (x, -1)).toMap))
 
   def appendEntry(command: RaftCommand): RaftLeaderState = create(persistent.copy(log = persistent.log :+ RaftEntry(currentTerm, command)), volatile)
 
@@ -23,11 +23,11 @@ case class RaftLeaderState(override val persistent: RaftPersistentState, overrid
     create(persistent, volatile.copy(nextIndex = volatile.nextIndex.updated(node, volatile.nextIndex(node) - 1)))
 
   def updateIndices(approvedNode: NodeId, majority: Int): RaftLeaderState = {
-    val matchIndex = volatile.nextIndex(approvedNode)
+    val prevNextIndex = volatile.nextIndex(approvedNode)
     val updated = copy(volatile = volatile.copy(
-      nextIndex = volatile.nextIndex.updated(approvedNode, matchIndex + 1), matchIndex = volatile.matchIndex.updated(approvedNode, matchIndex)))
+      nextIndex = volatile.nextIndex.updated(approvedNode, lastLogIndex + 1), matchIndex = volatile.matchIndex.updated(approvedNode, prevNextIndex - 1)))
     val majorityIndex = volatile.matchIndex.values.toVector.sorted.apply(majority - 2)
-    if (volatile.commitIndex < majorityIndex && persistent.log(majorityIndex).term == currentTerm)
+    if (volatile.commitIndex < majorityIndex && logTerm(majorityIndex) == currentTerm)
       updated.copy(volatile = volatile.copy(commitIndex = majorityIndex))
     else
       updated

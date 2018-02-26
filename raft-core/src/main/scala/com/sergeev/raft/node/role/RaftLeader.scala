@@ -2,13 +2,16 @@ package com.sergeev.raft.node.role
 
 import com.sergeev.raft.node.message._
 import com.sergeev.raft.node.state._
-import com.sergeev.raft.node.{ NodeId, ProcessingResult, RaftContext, StateHolder }
+import com.sergeev.raft.node.{NodeId, ProcessingResult, RaftContext, StateHolder}
 
 object RaftLeader extends RaftRole[RaftLeaderState] {
   override def shortName: String = "LDR"
 
   override def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[RaftLeaderState] =
-    StateHolder(this, RaftLeaderState(state.persistent, RaftLeaderVolatileState(state.volatile.commitIndex, Map(), Map())))
+    state match {
+      case leaderState: RaftLeaderState => StateHolder(this, leaderState)
+      case _ => StateHolder(this, RaftLeaderState(state.persistent, RaftLeaderVolatileState(state.volatile.commitIndex, Map(), Map())))
+    }
 
   override def processIncoming(incoming: RaftMessage, state: RaftLeaderState)(context: RaftContext): ProcessingResult[RaftLeaderState] = {
     def makeAppendEntriesForNode(node: NodeId, state: RaftLeaderState) = (node, AppendEntriesRequest(state.currentTerm, context.selfId,
@@ -42,7 +45,7 @@ object RaftLeader extends RaftRole[RaftLeaderState] {
 
       case AppendEntriesRequest(term, _, _, _, _, _) ⇒ processCompetitorAppendEntries(state, term)(context)
 
-      case RequestVoteRequest(term, _, _, _)         ⇒ processCompetitorRequestVote(state, term)(context)
+      case RequestVoteRequest(term, _, _, _) ⇒ processCompetitorRequestVote(state, term)(context)
 
       case _ => (this, state, Nil)
     }
