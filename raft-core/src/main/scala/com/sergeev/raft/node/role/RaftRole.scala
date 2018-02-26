@@ -5,6 +5,8 @@ import com.sergeev.raft.node.state.{RaftPersistentState, RaftState, RaftVolatile
 import com.sergeev.raft.node.{ProcessingResult, RaftContext, RaftTerm, StateHolder}
 
 abstract class RaftRole[S <: RaftState[_ <: RaftVolatileState[_], S]] {
+  def shortName: String
+
   def initializeState(raftPersistentState: RaftPersistentState): S = ???
 
   def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[S]

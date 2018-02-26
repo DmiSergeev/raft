@@ -5,6 +5,8 @@ import com.sergeev.raft.node.state._
 import com.sergeev.raft.node.{ ProcessingResult, RaftContext, StateHolder }
 
 object RaftCandidate extends RaftRole[RaftCandidateState] {
+  override def shortName: String = "CND"
+
   override def convertState(state: RaftState[_ <: RaftVolatileState[_], _]): StateHolder[RaftCandidateState] =
     StateHolder(this, RaftCandidateState(state.persistent, RaftCandidateVolatileState(state.volatile.commitIndex, Set())))
 
@@ -38,5 +40,7 @@ object RaftCandidate extends RaftRole[RaftCandidateState] {
       case AppendEntriesRequest(term, _, _, _, _, _) ⇒ processCompetitorAppendEntries(state, term)(context)
 
       case RequestVoteRequest(term, _, _, _)         ⇒ processCompetitorRequestVote(state, term)(context)
+
+      case _ => (this, state, Nil)
     }
 }

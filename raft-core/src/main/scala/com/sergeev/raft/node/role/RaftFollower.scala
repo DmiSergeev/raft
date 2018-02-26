@@ -6,6 +6,8 @@ import com.sergeev.raft.node.state._
 import com.sergeev.raft.node.{ ProcessingResult, RaftContext, StateHolder }
 
 object RaftFollower extends RaftRole[RaftFollowerState] {
+  override def shortName: String = "FLW"
+
   override def initializeState(raftPersistentState: RaftPersistentState): RaftFollowerState =
     RaftFollowerState(raftPersistentState, RaftFollowerVolatileState(-1, new DateTime(0)))
 
@@ -53,6 +55,8 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
         // If the logs end with the same term, then whichever log is longer is more up-to-date
         val updatedState = state.updateTerm(term).tryVoteFor(candidateId, lastLogIndex, lastLogTerm)
         responseWithTimeout(updatedState, RequestVoteResponse(state.currentTerm, updatedState.isVoteFor(candidateId)))
+
+      case _ => (this, state, Nil)
     }
   }
 }

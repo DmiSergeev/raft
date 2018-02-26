@@ -6,9 +6,11 @@ import com.sergeev.raft.node.role.{RaftFollower, RaftRole}
 import com.sergeev.raft.node.state.{RaftState, RaftVolatileState}
 
 trait RaftInstance {
-  def processClientCommand(command: RaftCommand)
+  def start(): Unit
 
-  def processNodeMessage(sender: NodeId, message: RaftMessage)
+  def processClientCommand(command: RaftCommand): Unit
+
+  def processNodeMessage(sender: NodeId, message: RaftMessage): Unit
 
   def currentRole: RaftRole[_]
 }
@@ -17,6 +19,8 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
   private var stateHolder: StateHolder[_ <: RaftState[_ <: RaftVolatileState[_], _]] =
     StateHolder(RaftFollower, RaftFollower.initializeState(storage.restore()))
 
+  override def start(): Unit = processMessage(None, StartUpMessage())
+
   override def processClientCommand(command: RaftCommand): Unit = processMessage(None, ClientCommand(command))
 
   override def processNodeMessage(sender: NodeId, message: RaftMessage): Unit = processMessage(Some(sender), message)
@@ -24,6 +28,7 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
   override def currentRole: RaftRole[_] = stateHolder.role
 
   private def processMessage(sender: Option[NodeId], inMessage: RaftMessage): Unit = {
+    println(s"${context.now.getMillis}: ${sender.getOrElse("*")}->${context.selfId}${stateHolder.role.shortName} $inMessage")
     val effectiveContext = context.copy(senderIdOption = sender)
 
     val processingResult = stateHolder.process(inMessage)(effectiveContext)
