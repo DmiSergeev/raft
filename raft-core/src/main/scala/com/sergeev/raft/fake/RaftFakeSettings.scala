@@ -1,24 +1,20 @@
 package com.sergeev.raft.fake
 
 import com.sergeev.raft.node.NodeId
+import com.sergeev.raft.util.implicits._
 
 import scala.collection.mutable
 import scala.util.Random
 
-class RaftFakeSettings(val nodes: List[NodeId]) {
-  val random: Random = new Random(123456)
-
-  private def initTimes(): mutable.Map[(NodeId, NodeId), Range] = {
+class RaftFakeSettings(nodes: List[NodeId], random: Random, defaultRange: Range = Range(5, 10)) {
+  val currentPingTime: mutable.Map[(NodeId, NodeId), Range] = {
     var map = mutable.Map.empty[(NodeId, NodeId), Range]
     for {node1 <- nodes
          node2 <- nodes
          if node1 != node2}
-      map((node1, node2)) = Range(0, 1)
+      map((node1, node2)) = defaultRange
     map
   }
-
-  val currentPingTime: mutable.Map[(NodeId, NodeId), Range] = initTimes()
-
 
   def setTime(from: NodeId, to: NodeId, timeRange: Range): Unit = if (from != to) currentPingTime((from, to)) = timeRange
 
@@ -28,8 +24,5 @@ class RaftFakeSettings(val nodes: List[NodeId]) {
 
   def setAllTimes(timeRange: Range): Unit = for (node <- nodes) setTimesFrom(node, timeRange)
 
-  def pingTime(from: NodeId, to: NodeId): Int = {
-    val range = currentPingTime((from, to))
-    range.start + random.nextInt(range.length)
-  }
+  def pingTime(from: NodeId, to: NodeId): Int = currentPingTime((from, to)).rand(random)
 }

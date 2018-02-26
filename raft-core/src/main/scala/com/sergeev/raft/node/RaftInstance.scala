@@ -9,6 +9,8 @@ trait RaftInstance {
   def processClientCommand(command: RaftCommand)
 
   def processNodeMessage(sender: NodeId, message: RaftMessage)
+
+  def currentRole: RaftRole[_]
 }
 
 class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, scheduler: RaftScheduler, storage: RaftStorage) extends RaftInstance {
@@ -18,6 +20,8 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
   override def processClientCommand(command: RaftCommand): Unit = processMessage(None, ClientCommand(command))
 
   override def processNodeMessage(sender: NodeId, message: RaftMessage): Unit = processMessage(Some(sender), message)
+
+  override def currentRole: RaftRole[_] = stateHolder.role
 
   private def processMessage(sender: Option[NodeId], inMessage: RaftMessage): Unit = {
     val effectiveContext = context.copy(senderIdOption = sender)

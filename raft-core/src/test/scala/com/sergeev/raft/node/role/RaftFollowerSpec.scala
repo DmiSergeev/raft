@@ -14,7 +14,7 @@ class RaftFollowerSpec extends WordSpec with Matchers {
   "processIncoming" should {
     "respond correctly" when {
       "term is outdated" in {
-        val context: RaftContext = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, 0, 0, Some(0), Some(Nil), Some(1))
+        val context: RaftContext = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, Range(0, 1), Range(0, 1), Some(0), Some(Nil), Some(1))
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))
 
@@ -26,7 +26,7 @@ class RaftFollowerSpec extends WordSpec with Matchers {
   "stateHolder" should {
     "work correctly" when {
       "always" in {
-        val context = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, 0, 0, Some(0), Some(Nil), Some(1))
+        val context = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, Range(0, 1), Range(0, 1), Some(0), Some(Nil), Some(1))
         val instance = new RaftRouter(context, new RaftNetworkStub(), new RaftFakeDiscreteScheduler(), new RaftFakeStorage)
 
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
