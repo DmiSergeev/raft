@@ -11,6 +11,8 @@ trait RaftContext {
 
   def heartbeatTimeout: Int
 
+  def minimumElectionTimeout: Int
+
   def electionTimeout: Int
 
   def selfId: NodeId
@@ -31,6 +33,8 @@ case class RaftContextImpl(timeProvider: RaftTimeProvider, majorityValue: Int,
   override def majority: Int = majorityValue
 
   override def heartbeatTimeout: Int = heartbeatTimeoutRange.rand(random)
+
+  override def minimumElectionTimeout: Int = electionTimeoutRange.start
 
   override def electionTimeout: Int = electionTimeoutRange.rand(random)
 

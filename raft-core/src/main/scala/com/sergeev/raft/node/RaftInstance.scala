@@ -47,12 +47,14 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
 
     for ((target, outMessage) ← outMessagesInfo)
       outMessage match {
-        case RetryProcessingMessage() ⇒ processMessage(sender, inMessage)
-        case _: SelfImmediateMessage  ⇒ processMessage(Some(effectiveContext.selfId), outMessage)
-        case _: SelfDeferredMessage ⇒ scheduler.schedule(outMessage.asInstanceOf[SelfDeferredMessage].interval, () ⇒ {
-          processMessage(Some(effectiveContext.selfId), outMessage)
-        })
-        case _: ExternalTargetMessage ⇒ network.sendMessage(target, outMessage)
+        case RetryProcessingMessage() ⇒
+          processMessage(sender, inMessage)
+        case _: SelfImmediateMessage ⇒ scheduler.schedule(0,
+          () => processMessage(Some(effectiveContext.selfId), outMessage))
+        case _: SelfDeferredMessage ⇒ scheduler.schedule(outMessage.asInstanceOf[SelfDeferredMessage].interval,
+          () => processMessage(Some(effectiveContext.selfId), outMessage))
+        case _: ExternalTargetMessage ⇒ scheduler.schedule(0,
+          () => network.sendMessage(target, outMessage))
       }
   }
 }

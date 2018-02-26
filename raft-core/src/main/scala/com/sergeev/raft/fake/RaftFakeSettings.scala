@@ -6,7 +6,7 @@ import com.sergeev.raft.util.implicits._
 import scala.collection.mutable
 import scala.util.Random
 
-class RaftFakeSettings(nodes: List[NodeId], random: Random, defaultRange: Range = Range(5, 10)) {
+class RaftFakeSettings(nodes: List[NodeId], random: Random, defaultRange: Range = Range(1, 4)) {
   val currentPingTime: mutable.Map[(NodeId, NodeId), Range] = {
     var map = mutable.Map.empty[(NodeId, NodeId), Range]
     for {node1 <- nodes

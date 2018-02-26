@@ -22,10 +22,10 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
       case StartUpMessage() ⇒ singleToSelf(this, state, IdleTimeoutMessage(context.electionTimeout))(context)
 
       case IdleTimeoutMessage(_) ⇒
-        if (context.now isAfter state.volatile.lastMessageTime.plusMillis(context.electionTimeout))
-          singleToSelf(RaftCandidate, state, SetUpCandidateMessage())(context)
-        else
+        if (state.volatile.lastMessageTime.plusMillis(context.minimumElectionTimeout) isAfter context.now)
           (this, state, Nil)
+        else
+          singleToSelf(RaftCandidate, state, SetUpCandidateMessage())(context)
 
       case AppendEntriesRequest(term, leaderId, prevLogIndex, prevLogTerm, entries, leaderCommit) ⇒
         // 1. Reply false if term < currentTerm
