@@ -26,7 +26,7 @@ case class RaftLeaderState(override val persistent: RaftPersistentState, overrid
     val matchIndex = volatile.nextIndex(approvedNode)
     val updated = copy(volatile = volatile.copy(
       nextIndex = volatile.nextIndex.updated(approvedNode, matchIndex + 1), matchIndex = volatile.matchIndex.updated(approvedNode, matchIndex)))
-    val majorityIndex = volatile.matchIndex.values.toVector.sorted.apply(majority - 1)
+    val majorityIndex = volatile.matchIndex.values.toVector.sorted.apply(majority - 2)
     if (volatile.commitIndex < majorityIndex && persistent.log(majorityIndex).term == currentTerm)
       updated.copy(volatile = volatile.copy(commitIndex = majorityIndex))
     else

@@ -1,4 +1,4 @@
-package com.sergeev.raft.simulation
+package com.sergeev.raft.fake
 
 import com.sergeev.raft.node.environment.RaftStorage
 import com.sergeev.raft.node.state.RaftPersistentState

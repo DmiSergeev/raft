@@ -8,7 +8,7 @@ sealed abstract class ExternalTargetMessage() extends RaftMessage
 
 sealed abstract class SelfImmediateMessage() extends RaftMessage
 
-sealed abstract class SelfDeferredMessage(val interval: Long) extends RaftMessage
+sealed abstract class SelfDeferredMessage(val interval: Int) extends RaftMessage
 
 case class RetryProcessingMessage() extends RaftMessage
 
@@ -29,9 +29,9 @@ case class SetUpCandidateMessage() extends SelfImmediateMessage
 
 case class SetUpLeaderMessage() extends SelfImmediateMessage
 
-case class IdleTimeoutMessage(override val interval: Long) extends SelfDeferredMessage(interval)
+case class IdleTimeoutMessage(override val interval: Int) extends SelfDeferredMessage(interval)
 
-case class ElectionTimeoutMessage(override val interval: Long) extends SelfDeferredMessage(interval)
+case class ElectionTimeoutMessage(override val interval: Int) extends SelfDeferredMessage(interval)
 
-case class HeartbeatLeaderMessage(override val interval: Long) extends SelfDeferredMessage(interval)
+case class HeartbeatLeaderMessage(override val interval: Int) extends SelfDeferredMessage(interval)
 

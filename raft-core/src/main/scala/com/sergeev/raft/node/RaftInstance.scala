@@ -11,7 +11,7 @@ trait RaftInstance {
   def processNodeMessage(sender: NodeId, message: RaftMessage)
 }
 
-class RaftRouter(context: RaftContext, network: RaftNetworkEndpoint, scheduler: RaftScheduler, storage: RaftStorage) extends RaftInstance {
+class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, scheduler: RaftScheduler, storage: RaftStorage) extends RaftInstance {
   private var stateHolder: StateHolder[_ <: RaftState[_ <: RaftVolatileState[_], _]] =
     StateHolder(RaftFollower, RaftFollower.initializeState(storage.restore()))
 
@@ -20,10 +20,9 @@ class RaftRouter(context: RaftContext, network: RaftNetworkEndpoint, scheduler: 
   override def processNodeMessage(sender: NodeId, message: RaftMessage): Unit = processMessage(Some(sender), message)
 
   private def processMessage(sender: Option[NodeId], inMessage: RaftMessage): Unit = {
-    if (sender.nonEmpty)
-      context.senderId = sender.get // TODO:
+    val effectiveContext = context.copy(senderIdOption = sender)
 
-    val processingResult = stateHolder.process(inMessage)(context)
+    val processingResult = stateHolder.process(inMessage)(effectiveContext)
     val nextRole = processingResult._1
     val nextStateBeforeConvert = processingResult._2
     val outMessagesInfo = processingResult._3
@@ -40,9 +39,9 @@ class RaftRouter(context: RaftContext, network: RaftNetworkEndpoint, scheduler: 
     for ((target, outMessage) ← outMessagesInfo)
       outMessage match {
         case RetryProcessingMessage() ⇒ processMessage(sender, inMessage)
-        case _: SelfImmediateMessage  ⇒ processMessage(Some(context.selfId), outMessage)
+        case _: SelfImmediateMessage  ⇒ processMessage(Some(effectiveContext.selfId), outMessage)
         case _: SelfDeferredMessage ⇒ scheduler.schedule(outMessage.asInstanceOf[SelfDeferredMessage].interval, () ⇒ {
-          processMessage(Some(context.selfId), outMessage)
+          processMessage(Some(effectiveContext.selfId), outMessage)
         })
         case _: ExternalTargetMessage ⇒ network.sendMessage(target, outMessage)
       }

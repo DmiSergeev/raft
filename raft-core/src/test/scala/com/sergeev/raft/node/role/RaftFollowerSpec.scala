@@ -1,27 +1,20 @@
 
 package com.sergeev.raft.node.role
 
+import com.sergeev.raft.fake.discrete.RaftFakeDiscreteScheduler
+import com.sergeev.raft.fake.{RaftFakeStorage, RaftNetworkStub}
+import com.sergeev.raft.node.environment._
+import com.sergeev.raft.node.message.{AppendEntriesRequest, AppendEntriesResponse, IdleTimeoutMessage}
+import com.sergeev.raft.node.state.{RaftFollowerState, RaftFollowerVolatileState, RaftPersistentState}
+import com.sergeev.raft.node.{RaftContext, RaftContextImpl, RaftRouter}
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
-import com.sergeev.raft.node.environment.{RaftNetworkEndpoint, RaftScheduler, RaftStorage}
-import com.sergeev.raft.node.{NodeId, RaftContext, RaftRouter}
-import com.sergeev.raft.node.message.{AppendEntriesRequest, AppendEntriesResponse, ElectionTimeoutMessage, IdleTimeoutMessage}
-import com.sergeev.raft.node.state.{RaftFollowerState, RaftFollowerVolatileState, RaftPersistentState}
-import com.sergeev.raft.simulation.RaftFakeStorage
 
 class RaftFollowerSpec extends WordSpec with Matchers {
   "processIncoming" should {
     "respond correctly" when {
       "term is outdated" in {
-        val context: RaftContext = new RaftContext {
-          override val now: DateTime = new DateTime(0)
-          override var senderId: NodeId = 1
-          override val selfId: NodeId = 0
-          override val majority: Int = 0
-          override val others: List[NodeId] = Nil
-          override val heartbeatTimeout: Int = 0
-          override val electionTimeout: Int = 0
-        }
+        val context: RaftContext = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, 0, 0, Some(0), Some(Nil), Some(1))
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))
 
@@ -33,16 +26,8 @@ class RaftFollowerSpec extends WordSpec with Matchers {
   "stateHolder" should {
     "work correctly" when {
       "always" in {
-        val context: RaftContext = new RaftContext {
-          override val now: DateTime = new DateTime(0)
-          override var senderId: NodeId = 1
-          override val selfId: NodeId = 0
-          override val majority: Int = 0
-          override val others: List[NodeId] = Nil
-          override val heartbeatTimeout: Int = 0
-          override val electionTimeout: Int = 0
-        }
-        val instance = new RaftRouter(context, RaftNetworkEndpoint, RaftScheduler, new RaftFakeStorage)
+        val context = RaftContextImpl(RaftFixedTimeProvider(new DateTime(0)), 3, 0, 0, Some(0), Some(Nil), Some(1))
+        val instance = new RaftRouter(context, new RaftNetworkStub(), new RaftFakeDiscreteScheduler(), new RaftFakeStorage)
 
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))

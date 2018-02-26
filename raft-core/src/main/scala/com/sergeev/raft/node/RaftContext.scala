@@ -1,19 +1,39 @@
 package com.sergeev.raft.node
 
+import com.sergeev.raft.node.environment.RaftTimeProvider
 import org.joda.time.DateTime
 
 trait RaftContext {
-  val now: DateTime
+  def majority: Int
 
-  val majority: Int
+  def heartbeatTimeout: Int
 
-  val heartbeatTimeout: Int
+  def electionTimeout: Int
 
-  val electionTimeout: Int
+  def selfId: NodeId
 
-  val selfId: NodeId
+  def others: List[NodeId]
 
-  val others: List[NodeId]
+  def now: DateTime
 
-  var senderId: NodeId
+  def senderId: NodeId
+}
+
+case class RaftContextImpl(timeProvider: RaftTimeProvider, majorityValue: Int,
+                       heartbeatTimeoutValue: Int, electionTimeoutValue: Int,
+                       selfIdOption: Option[NodeId] = None, othersOption: Option[List[NodeId]] = None,
+                       senderIdOption: Option[NodeId] = None) extends RaftContext {
+  override def now: DateTime = timeProvider.now()
+
+  override def majority: Int = majorityValue
+
+  override def heartbeatTimeout: Int = heartbeatTimeoutValue
+
+  override def electionTimeout: Int = electionTimeoutValue
+
+  override def selfId: NodeId = selfIdOption.getOrElse(???)
+
+  override def others: List[NodeId] = othersOption.getOrElse(???)
+
+  override def senderId: NodeId = senderIdOption.getOrElse(???)
 }

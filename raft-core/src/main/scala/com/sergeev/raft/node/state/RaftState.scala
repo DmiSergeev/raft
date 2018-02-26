@@ -51,7 +51,7 @@ abstract class RaftState[V <: RaftVolatileState[V], T <: RaftState[V, T]] {
   def patchLog(prevLogIndex: RaftIndexer, entries: Vector[RaftEntry], leaderCommit: RaftIndexer): T = {
     val lastNewIndex = prevLogIndex + entries.length
     val conflicted = persistent.log.zipWithIndex
-      .exists { case (entry, index) ⇒ index >= prevLogIndex && index <= lastNewIndex && entry.term != entries(index - (prevLogIndex + 1)).term }
+      .exists { case (entry, index) ⇒ index > prevLogIndex && index <= lastNewIndex && entry.term != entries(index - (prevLogIndex + 1)).term }
     val patchedLog = persistent.log.take(prevLogIndex + 1) ++
       entries ++
       (if (conflicted) Nil else persistent.log.drop(lastNewIndex + 1))
