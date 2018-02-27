@@ -13,5 +13,5 @@ class RaftFakeNetwork(selfId: NodeId, routing: mutable.Map[NodeId, RaftInstance]
 
   def processMessage(sender: NodeId, message: RaftMessage): Unit = routing(selfId).processNodeMessage(sender, message)
 
-  override def sendClientAck(command: RaftCommand): Unit = println("Client ack: " + command)
+  override def sendClientAck(command: RaftCommand): Unit = {}
 }

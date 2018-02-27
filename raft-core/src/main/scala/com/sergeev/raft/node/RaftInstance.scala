@@ -28,7 +28,6 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
   override def currentRole: RaftRole[_] = stateHolder.role
 
   private def processMessage(sender: Option[NodeId], inMessage: RaftMessage): Unit = {
-    println(s"${context.now.getMillis}: ${sender.getOrElse("*")}->${context.selfId}${stateHolder.role.shortName} $inMessage")
     val effectiveContext = context.copy(senderIdOption = sender)
 
     val processingResult = stateHolder.process(inMessage)(effectiveContext)
@@ -36,19 +35,26 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
     val nextStateBeforeConvert = processingResult._2
     val outMessagesInfo = processingResult._3
 
+    val ignored = nextRole == stateHolder.role && nextStateBeforeConvert == stateHolder.state && outMessagesInfo.isEmpty
+    println(s"${context.now.getMillis}: ${sender.getOrElse("*")}->${context.selfId}${stateHolder.role.shortName} $inMessage")
+    for ((target, outMessage) ← outMessagesInfo)
+      println(s"                 ->$target $outMessage")
+
     val oldState = stateHolder.state
     stateHolder = nextRole.convertState(nextStateBeforeConvert)
 
     val appliedCommands = stateHolder.state.appliedCommands(oldState)
     storage.save(stateHolder.state.persistent)
 
-    for (command <- appliedCommands)
+    for (command <- appliedCommands) {
       network.sendClientAck(command)
+      println(s"                 =>$command")
+    }
 
     for ((target, outMessage) ← outMessagesInfo)
       outMessage match {
         case RetryProcessingMessage() ⇒
-          processMessage(sender, inMessage)
+          () => processMessage(sender, inMessage)
         case _: SelfImmediateMessage ⇒ scheduler.schedule(0,
           () => processMessage(Some(effectiveContext.selfId), outMessage))
         case _: SelfDeferredMessage ⇒ scheduler.schedule(outMessage.asInstanceOf[SelfDeferredMessage].interval,
