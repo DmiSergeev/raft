@@ -15,7 +15,7 @@ class RaftDiscreteSimulator(nodeCount: Int = 5,
                             random: Random = new Random(123456)) extends RaftSimulator {
   val majority: Int = (nodeCount + 1) / 2
   val nodes: List[NodeId] = Range(1, 1 + nodeCount).toList.map(x => x.toLong)
-  val settings: RaftFakeSettings = new RaftFakeSettings(nodes, random)
+  val settings: RaftFakeAvailabilitySettings = new RaftFakeAvailabilitySettings(nodes, random)
   val scheduler: RaftFakeDiscreteScheduler = new RaftFakeDiscreteScheduler()
   val contextPrototype: RaftContextImpl = RaftContextImpl(scheduler, majority, heartbeatTimeoutRange, electionTimeoutRange, random = random)
   val routing: mutable.Map[NodeId, RaftInstance] = mutable.Map[NodeId, RaftInstance]()
@@ -32,14 +32,30 @@ class RaftDiscreteSimulator(nodeCount: Int = 5,
 
   def start(): Unit = for (env <- nodeEnvironment.values) env.instance.start()
 
-  def sendToLeader(command: RaftCommand): Boolean = {
-    val optionalLeader = nodeEnvironment.values.find(env => env.instance.currentRole == RaftLeader).map(env => env.instance)
-    if (optionalLeader.nonEmpty)
-      optionalLeader.get.processClientCommand(command)
-    optionalLeader.nonEmpty
+  def updateTime(time: Long): Unit = scheduler.update(new DateTime(time))
+
+  def leader: Option[NodeId] = {
+    val maxTerm: RaftTerm = nodeEnvironment.values.map(env => env.instance.currentTerm).max
+    nodeEnvironment.values
+      .find(env => env.instance.currentRole == RaftLeader && env.instance.currentTerm == maxTerm)
+      .map(env => env.context.selfId)
   }
 
-  def updateTime(time: Long): Unit = scheduler.update(new DateTime(time))
+  def sendToLeader(command: RaftCommand): Boolean = {
+    val optionalLeaderInstance = leader.map(node => nodeEnvironment(node).instance)
+    if (optionalLeaderInstance.nonEmpty)
+      optionalLeaderInstance.get.processClientCommand(command)
+    optionalLeaderInstance.nonEmpty
+  }
+
+  def shutdownInstance(node: NodeId): Unit = {
+    settings.setUnavailableFrom(node)
+  }
+
+  def restartInstance(node: NodeId): Unit = {
+    settings.resetTimesFrom(node)
+    nodeEnvironment(node).instance.restart()
+  }
 }
 
-case class RaftNodeFakeEnvironment(context: RaftContext, network: RaftFakeNetwork, storage: RaftStorage, instance: RaftInstance)
+case class RaftNodeFakeEnvironment(context: RaftContextImpl, network: RaftFakeNetwork, storage: RaftStorage, instance: RaftInstance)

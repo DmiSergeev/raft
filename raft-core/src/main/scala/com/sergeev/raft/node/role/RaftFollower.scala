@@ -21,6 +21,9 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
     def responseWithTimeout(state: RaftFollowerState, response: RaftMessage): ProcessingResult[RaftFollowerState] =
       responseAndToSelf(RaftFollower, state.withUpdatedLastTime(context), IdleTimeoutMessage(context.electionTimeout), response)(context)
 
+    def responseWithoutTimeout(state: RaftFollowerState, response: RaftMessage): ProcessingResult[RaftFollowerState] =
+      singleResponse(RaftFollower, state, response)(context)
+
     incoming match {
       case StartUpMessage() ⇒ singleToSelf(this, state, IdleTimeoutMessage(context.electionTimeout))(context)
 
@@ -33,7 +36,7 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
       case AppendEntriesRequest(term, leaderId, prevLogIndex, prevLogTerm, entries, leaderCommit) ⇒
         // 1. Reply false if term < currentTerm
         if (term < state.currentTerm)
-          return responseWithTimeout(state, AppendEntriesResponse(state.currentTerm, success = false))
+          return responseWithoutTimeout(state, AppendEntriesResponse(state.currentTerm, success = false))
 
         // 2. Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm [consistency check protocol]
         // note: (log entry term > prevLogTerm) means illegal state
@@ -51,7 +54,7 @@ object RaftFollower extends RaftRole[RaftFollowerState] {
       case RequestVoteRequest(term, candidateId, lastLogIndex, lastLogTerm) ⇒
         // 1. Reply false if term < currentTerm
         if (term < state.currentTerm)
-          return responseWithTimeout(state, RequestVoteResponse(state.currentTerm, voteGranted = false))
+          return responseWithoutTimeout(state, RequestVoteResponse(state.currentTerm, voteGranted = false))
 
         // 2. If votedFor is null or candidateId, and candidate’s log is at least as up-to-date as receiver’s log, grant vote
         // If the logs have last entries with different terms, then the log with the later term is more up-to-date.

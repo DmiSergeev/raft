@@ -8,11 +8,15 @@ import com.sergeev.raft.node.state.{RaftState, RaftVolatileState}
 trait RaftInstance {
   def start(): Unit
 
+  def restart(): Unit
+
   def processClientCommand(command: RaftCommand): Unit
 
   def processNodeMessage(sender: NodeId, message: RaftMessage): Unit
 
   def currentRole: RaftRole[_]
+
+  def currentTerm: RaftTerm
 }
 
 class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, scheduler: RaftScheduler, storage: RaftStorage) extends RaftInstance {
@@ -21,11 +25,18 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
 
   override def start(): Unit = processMessage(None, StartUpMessage())
 
+  override def restart(): Unit = {
+    stateHolder = StateHolder(RaftFollower, RaftFollower.initializeState(storage.restore()))
+    start()
+  }
+
   override def processClientCommand(command: RaftCommand): Unit = processMessage(None, ClientCommand(command))
 
   override def processNodeMessage(sender: NodeId, message: RaftMessage): Unit = processMessage(Some(sender), message)
 
   override def currentRole: RaftRole[_] = stateHolder.role
+
+  override def currentTerm: RaftTerm = stateHolder.state.currentTerm
 
   private def processMessage(sender: Option[NodeId], inMessage: RaftMessage): Unit = {
     val effectiveContext = context.copy(senderIdOption = sender)
@@ -53,8 +64,8 @@ class RaftRouter(context: RaftContextImpl, network: RaftNetworkEndpoint, schedul
 
     for ((target, outMessage) ← outMessagesInfo)
       outMessage match {
-        case RetryProcessingMessage() ⇒
-          () => processMessage(sender, inMessage)
+        case RetryProcessingMessage() ⇒ scheduler.schedule(0,
+          () => processMessage(sender, inMessage))
         case _: SelfImmediateMessage ⇒ scheduler.schedule(0,
           () => processMessage(Some(effectiveContext.selfId), outMessage))
         case _: SelfDeferredMessage ⇒ scheduler.schedule(outMessage.asInstanceOf[SelfDeferredMessage].interval,

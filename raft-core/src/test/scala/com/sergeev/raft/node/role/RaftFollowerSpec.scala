@@ -19,7 +19,7 @@ class RaftFollowerSpec extends WordSpec with Matchers {
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))
 
         RaftFollower.processIncoming(request, state)(context) shouldBe
-          (RaftFollower, state, List((0, IdleTimeoutMessage(0)), (1, AppendEntriesResponse(1, success = false))))
+          (RaftFollower, state, List((1, AppendEntriesResponse(1, success = false))))
       }
     }
   }
@@ -32,7 +32,7 @@ class RaftFollowerSpec extends WordSpec with Matchers {
         val request = AppendEntriesRequest(0, 0, 0, 0, Vector(), 0)
         val state = RaftFollowerState(RaftPersistentState(1, None, Vector()), RaftFollowerVolatileState(0, new DateTime(0)))
 
-        instance.processNodeMessage(1, request) // shouldBe (RaftFollower, state, List((0, IdleTimeoutMessage(0)), (1, AppendEntriesResponse(1, success = false))))
+        instance.processNodeMessage(1, request) // shouldBe (RaftFollower, state, List((1, AppendEntriesResponse(1, success = false))))
       }
     }
   }
